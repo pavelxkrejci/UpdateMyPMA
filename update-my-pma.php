@@ -48,7 +48,7 @@ function getLatestVersion() { //adapted from PMA_Util::getLatestVersion()  @Util
 }
 
 function getCurrentVersion($target_folder) {
-    $ConfigClassFile = $target_folder . "/libraries/Config.class.php";
+    $ConfigClassFile = $target_folder . "/libraries/Config.php";
     $VersionCode = '$this->set(\'PMA_VERSION\'';
     $ConfigClass = file_get_contents($ConfigClassFile, NULL);
     $position = strpos($ConfigClass,$VersionCode);
