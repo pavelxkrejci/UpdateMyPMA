@@ -32,7 +32,7 @@ function getLatestVersion() { //adapted from PMA_Util::getLatestVersion()  @Util
     // from a working server
     $connection_timeout = 3;
 
-    $file = 'http://www.phpmyadmin.net/home_page/version.json';
+    $file = 'https://www.phpmyadmin.net/home_page/version.json';
 
     $curl_handle = curl_init($file);
     curl_setopt($curl_handle, CURLOPT_HEADER, false);
