@@ -1,6 +1,6 @@
 <?php
 /**
- * Update My PMA (C) Pavel Krejci 2015 v1.0
+ * Update My PMA (C) Pavel Krejci 2015,2022 v1.2
  * includes PMA version checking from http://www.phpmyadmin.net/home_page/version.json
  */
 
@@ -48,14 +48,23 @@ function getLatestVersion() { //adapted from PMA_Util::getLatestVersion()  @Util
 }
 
 function getCurrentVersion($target_folder) {
-    $ConfigClassFile = $target_folder . "/libraries/classes/Config.php";
-    $VersionCode = '$this->set(\'PMA_VERSION\'';
+    $ConfigClassFile = $target_folder . "/libraries/classes/Version.php";
+    $VersionCode = 'public const VERSION = ';
+    $VersionCode2 = '. VERSION_SUFFIX;';
     $ConfigClass = file_get_contents($ConfigClassFile, NULL);
     $position = strpos($ConfigClass,$VersionCode);
-    if ($position === false) {
+    $position2 = strpos($ConfigClass,$VersionCode2);
+    $VersionLen = $position2 - ($position + strlen($VersionCode));
+    if ($position === false || $position2 === false || $VersionLen < 3 ) { //check 1
       $version = false;
     } else {
-      $version = trim( substr($ConfigClass,$position + strlen($VersionCode),16) , " \t\n\r\0\x0B;,)'/*" );
+      $version_tmp = trim( substr($ConfigClass,$position + strlen($VersionCode),$VersionLen) , " \t\n\r\0\x0B;,)'/*" );
+      if ((0 !== preg_match('/(\d+\.?)+/', $version_tmp, $pregmatched))) { //check 2
+        $version = $pregmatched[0];
+      } else {
+        //$version = trim( substr($ConfigClass,$position + strlen($VersionCode)) , " \t\n\r\0\x0B;,)'/*" ); //DEBUG
+        $version = false;
+      }
     }
     unset($ConfigClass); //clear mem
     return $version;
@@ -117,17 +126,28 @@ function download_pma($url,$certs="") {
 $version = getLatestVersion();
 $currentversion = getCurrentVersion($target_folder);
 
+if (is_object($version)) {
+    echo("Debug: version check ok!\n");
+} else {
+    //send mail
+    $mail_body = "PMA version check failed: ".$version; //mail body
+    $subject = "PMA version check failed ".$version->version; //subject
+    $header = "From: ". $Name . " <" . $email . ">\r\n"; //optional headerfields
+    if (SEND_NOTIFICATION_EMAIL) mail($recipient, $subject, $mail_body, $header);
+    die("Fatal Error: PMA version check failed!\n");
+}
+
 echo("<pre>\n"); //for readable browser output
 print_r(
     array(
         'new_version' => $version->version,
         'date' => $version->date,
         'current' => $currentversion,
-        'update' => ($version->version <> $currentversion) ? true : false
+        'update' => (!empty($currentversion) && !empty($version->version) && $version->version <> $currentversion) ? true : false
     )
 );
 
-if (!empty($version->version) && ($version->version <> $currentversion)) {
+if (!empty($currentversion) && !empty($version->version) && ($version->version <> $currentversion)) { //DEBUG!! && false 
   echo ("New version detected - starting Update\n");
 
   $newpmaname = 'phpMyAdmin-'.$version->version.'-all-languages'; //multilingual version
