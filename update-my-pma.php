@@ -131,7 +131,7 @@ if (is_object($version)) {
 } else {
     //send mail
     $mail_body = "PMA version check failed: ".$version; //mail body
-    $subject = "PMA version check failed ".$version->version; //subject
+    $subject = "PMA version check failed"; //subject
     $header = "From: ". $Name . " <" . $email . ">\r\n"; //optional headerfields
     if (SEND_NOTIFICATION_EMAIL) mail($recipient, $subject, $mail_body, $header);
     die("Fatal Error: PMA version check failed!\n");
@@ -193,7 +193,10 @@ if (!empty($currentversion) && !empty($version->version) && ($version->version <
     //rename folder
     $i=0;
     while($item_name = $zip->getNameIndex($i)){
-      $zip->renameIndex( $i, str_replace( $newpmaname."/", "", $item_name ) );
+      $newitemname = str_replace( $newpmaname."/", "", $item_name );
+      if (!empty($newitemname)) {
+         $zip->renameIndex( $i, $newitemname );
+      }
       $i++;
     }
     $zip->deleteName($newpmaname."/"); //delete last empty dir
